@@ -3,6 +3,7 @@ import yfinance
 import pandas as pd
 import pandas_ta as ta
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from datetime import datetime, timedelta
 
@@ -118,22 +119,49 @@ col3.metric("Trend", trend)
 # candlestick chart
 st.subheader(f"{ticker} Price Chart")
 
-fig = go.Figure(data=[go.Candlestick(
+fig = make_subplots(
+    rows=3, cols=1,
+    shared_xaxes=True,
+    row_heights=[0.6, 0.2, 0.2],
+    vertical_spacing=0.05
+)
+
+fig.add_trace(go.Candlestick(
     x=historical_data.index,
     open=historical_data["Open"],
     high=historical_data["High"],
     low=historical_data["Low"],
-    close=historical_data["Close"]
-)])
+    close=historical_data["Close"],
+    name="Price"
+), row=1, col=1)
+
+fig.add_trace(go.Bar(
+    x=historical_data.index,
+    y=historical_data["Volume"],
+    name="Volume",
+    marker_color="rgba(100, 149, 237, 0.5)"
+), row=2, col=1)
+
+
+
+fig.add_trace(go.Scatter(
+    x=historical_data.index,
+    y=rsi,
+    name="RSI",
+    line=dict(color="orange", width=1.5)
+), row=3, col=1)
+
+fig.add_hline(y=70, line_dash="dash", line_color="red", row=3, col=1)
+fig.add_hline(y=30, line_dash="dash", line_color="green", row=3, col=1)
 
 fig.update_layout(
     xaxis_rangeslider_visible=False,
+    height=600,
     plot_bgcolor="white",
-    height=500
+    showlegend=False
 )
 
 st.plotly_chart(fig, use_container_width=True)
-
 
 
 # trade idea
