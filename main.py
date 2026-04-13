@@ -1,10 +1,14 @@
 import yfinance
 import pandas as pd
 import pandas_ta as ta
+from datetime import datetime, timedelta
+
+end_date = datetime.today()
+start_date = end_date - timedelta(days=365)
 
 # data fetching
 data = yfinance.Ticker("SOL.JO")
-historical_data = data.history(start="2024-01-01", end="2024-12-31")
+historical_data = data.history(start=start_date, end=end_date)
 close_price = historical_data["Close"]
 
 # indicator calculation
