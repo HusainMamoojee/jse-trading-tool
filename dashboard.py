@@ -443,7 +443,7 @@ with tab2:
                     "Signal":    signal
                 })
 
-                scanner_df["RSI"] = scanner_df["RSI"].astype(float).round(1)
+
 
             except Exception:
                 continue
