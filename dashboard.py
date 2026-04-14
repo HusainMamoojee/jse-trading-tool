@@ -453,6 +453,7 @@ with tab2:
 
         if scanner_results:
             scanner_df = pd.DataFrame(scanner_results)
+            scanner_df["RSI"] = scanner_df["RSI"].astype(float).round(1)
 
             signal_order = ["Strong Buy", "Buy", "Hold", "Sell", "Strong Sell"]
             scanner_df["_sort"] = scanner_df["Signal"].apply(
