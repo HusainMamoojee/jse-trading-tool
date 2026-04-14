@@ -18,18 +18,15 @@ st.markdown("""
     html, body, [class*="css"] {
         font-family: 'IBM Plex Sans', sans-serif;
     }
-
     .stApp {
         background-color: #0d1117;
         color: #c9d1d9;
     }
-
     .block-container {
         padding-top: 1.5rem;
         padding-bottom: 2rem;
         max-width: 1200px;
     }
-
     h1 {
         font-family: 'IBM Plex Mono', monospace !important;
         color: #58a6ff !important;
@@ -41,7 +38,6 @@ st.markdown("""
         padding-bottom: 0.75rem !important;
         margin-bottom: 1.5rem !important;
     }
-
     h2, h3 {
         font-family: 'IBM Plex Mono', monospace !important;
         color: #58a6ff !important;
@@ -52,15 +48,12 @@ st.markdown("""
         margin-top: 1.5rem !important;
         margin-bottom: 0.5rem !important;
     }
-
-    /* Metric cards */
     [data-testid="metric-container"] {
         background-color: #161b22 !important;
         border: 1px solid #30363d !important;
         border-radius: 6px !important;
         padding: 1rem 1.25rem !important;
     }
-
     [data-testid="metric-container"] label {
         font-family: 'IBM Plex Mono', monospace !important;
         color: #8b949e !important;
@@ -68,20 +61,16 @@ st.markdown("""
         text-transform: uppercase !important;
         letter-spacing: 0.1em !important;
     }
-
     [data-testid="stMetricValue"] {
         font-family: 'IBM Plex Mono', monospace !important;
         color: #e6edf3 !important;
         font-size: 1.5rem !important;
         font-weight: 600 !important;
     }
-
     [data-testid="stMetricDelta"] {
         font-family: 'IBM Plex Mono', monospace !important;
         font-size: 0.8rem !important;
     }
-
-    /* Selectbox */
     .stSelectbox label {
         font-family: 'IBM Plex Mono', monospace !important;
         color: #8b949e !important;
@@ -89,7 +78,6 @@ st.markdown("""
         text-transform: uppercase !important;
         letter-spacing: 0.1em !important;
     }
-
     .stSelectbox > div > div {
         background-color: #161b22 !important;
         border: 1px solid #30363d !important;
@@ -97,13 +85,11 @@ st.markdown("""
         font-family: 'IBM Plex Sans', sans-serif !important;
         border-radius: 6px !important;
     }
-
-    /* Divider */
-    hr {
-        border-color: #21262d !important;
+    hr { border-color: #21262d !important; }
+    .stDataFrame {
+        border: 1px solid #2e3249;
+        border-radius: 8px;
     }
-
-    /* Recommendation box */
     .rec-box {
         background-color: #161b22;
         border: 1px solid #30363d;
@@ -111,13 +97,11 @@ st.markdown("""
         padding: 1rem 1.25rem;
         margin: 0.5rem 0 1rem 0;
     }
-
     .rec-strong-buy  { border-left: 4px solid #3fb950; }
     .rec-buy         { border-left: 4px solid #56d364; }
     .rec-hold        { border-left: 4px solid #d29922; }
     .rec-sell        { border-left: 4px solid #f85149; }
     .rec-strong-sell { border-left: 4px solid #da3633; }
-
     .rec-label {
         font-family: 'IBM Plex Mono', monospace;
         font-size: 0.7rem;
@@ -126,24 +110,36 @@ st.markdown("""
         color: #8b949e;
         margin-bottom: 0.25rem;
     }
-
     .rec-value {
         font-family: 'IBM Plex Mono', monospace;
         font-size: 1.3rem;
         font-weight: 600;
         margin-bottom: 0.5rem;
     }
-
     .rec-strong-buy  .rec-value { color: #3fb950; }
     .rec-buy         .rec-value { color: #56d364; }
     .rec-hold        .rec-value { color: #d29922; }
     .rec-sell        .rec-value { color: #f85149; }
     .rec-strong-sell .rec-value { color: #da3633; }
-
     .rec-reasoning {
         font-size: 0.85rem;
         color: #8b949e;
         line-height: 1.5;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #0d1117;
+        border-bottom: 1px solid #21262d;
+    }
+    .stTabs [data-baseweb="tab"] {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #8b949e;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #58a6ff !important;
+        border-bottom: 2px solid #58a6ff !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -199,196 +195,310 @@ stocks = {
     "Woolworths (WHL)": "WHL.JO",
 }
 
-selected = st.selectbox("Select stock", list(stocks.keys()))
-ticker = stocks[selected]
+tab1, tab2 = st.tabs(["Analysis", "Scanner"])
 
-# data fetching
-data = yfinance.Ticker(ticker)
-historical_data = data.history(start=start_date, end=end_date, auto_adjust=True)
-close_price = historical_data["Close"]
+# ─── TAB 1: ANALYSIS ───────────────────────────────────────────────────────────
+with tab1:
+    selected = st.selectbox("Select stock", list(stocks.keys()))
+    ticker = stocks[selected]
 
-if historical_data.empty:
-    st.error("No data found for this ticker. Try another stock.")
-    st.stop()
+    st.subheader(f"{ticker} — RSI + MACD Strategy")
 
-# indicator calculation
-rsi = ta.rsi(close_price)
+    data = yfinance.Ticker(ticker)
+    historical_data = data.history(start=start_date, end=end_date, auto_adjust=True)
+    close_price = historical_data["Close"]
 
-if rsi is None or rsi.dropna().empty:
-    st.error("Not enough data to calculate indicators for this ticker.")
-    st.stop()
+    if historical_data.empty:
+        st.error("No data found for this ticker. Try another stock.")
+        st.stop()
 
-macd_df = ta.macd(close_price)
-if macd_df is None:
-    st.error("Not enough data to calculate MACD for this ticker.")
-    st.stop()
+    rsi = ta.rsi(close_price)
 
-macd_line = macd_df["MACD_12_26_9"]
-signal_line = macd_df["MACDs_12_26_9"]
-histogram = macd_df["MACDh_12_26_9"]
+    if rsi is None or rsi.dropna().empty:
+        st.error("Not enough data to calculate indicators for this ticker.")
+        st.stop()
 
-ma50 = historical_data["Close"].rolling(window=50).mean()
-support = historical_data["Low"].rolling(window=20).min().iloc[-1]
-resistance = historical_data["High"].rolling(window=20).max().iloc[-1]
+    macd_df = ta.macd(close_price)
+    if macd_df is None:
+        st.error("Not enough data to calculate MACD for this ticker.")
+        st.stop()
 
-current_price = historical_data["Close"].dropna().iloc[-1]
-current_rsi = rsi.iloc[-1]
-current_macd = macd_line.iloc[-1]
-current_signal_val = signal_line.iloc[-1]
+    macd_line   = macd_df["MACD_12_26_9"]
+    signal_line = macd_df["MACDs_12_26_9"]
+    histogram   = macd_df["MACDh_12_26_9"]
 
-if pd.isna(current_price) or pd.isna(current_rsi):
-    st.error("Price data unavailable for this ticker. Try another stock.")
-    st.stop()
+    ma50       = historical_data["Close"].rolling(window=50).mean()
+    support    = historical_data["Low"].rolling(window=20).min().iloc[-1]
+    resistance = historical_data["High"].rolling(window=20).max().iloc[-1]
 
-trend = "Bullish" if current_price > ma50.iloc[-1] else "Bearish"
-macd_is_bullish = current_macd > current_signal_val
-macd_is_bearish = current_macd < current_signal_val
+    current_price      = historical_data["Close"].dropna().iloc[-1]
+    current_rsi        = rsi.iloc[-1]
+    current_macd       = macd_line.iloc[-1]
+    current_signal_val = signal_line.iloc[-1]
 
-# signal generation
-macd_bullish_cross = (macd_line.shift(1) < signal_line.shift(1)) & (macd_line > signal_line)
-macd_bearish_cross = (macd_line.shift(1) > signal_line.shift(1)) & (macd_line < signal_line)
-rsi_oversold = (rsi.shift(1) > 30) & (rsi < 30)
-rsi_overbought = (rsi.shift(1) < 70) & (rsi > 70)
+    if pd.isna(current_price) or pd.isna(current_rsi):
+        st.error("Price data unavailable for this ticker. Try another stock.")
+        st.stop()
 
-historical_data["Signal"] = "Hold"
-historical_data.loc[rsi_oversold | macd_bullish_cross, "Signal"] = "Buy"
-historical_data.loc[rsi_oversold & macd_bullish_cross, "Signal"] = "Strong Buy"
-historical_data.loc[rsi_overbought | macd_bearish_cross, "Signal"] = "Sell"
-historical_data.loc[rsi_overbought & macd_bearish_cross, "Signal"] = "Strong Sell"
+    trend          = "Bullish" if current_price > ma50.iloc[-1] else "Bearish"
+    macd_is_bullish = current_macd > current_signal_val
+    macd_is_bearish = current_macd < current_signal_val
 
-# metrics row
-st.subheader(f"{ticker} — Live Metrics")
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Current Price", f"R{current_price / 100:.2f}")
-col2.metric("RSI (14)", f"{current_rsi:.1f}",
-            delta="Oversold" if current_rsi < 30 else ("Overbought" if current_rsi > 70 else "Neutral"))
-col3.metric("Trend (MA50)", trend)
-col4.metric("MACD Bias", "Bullish" if macd_is_bullish else "Bearish")
+    macd_bullish_cross = (macd_line.shift(1) < signal_line.shift(1)) & (macd_line > signal_line)
+    macd_bearish_cross = (macd_line.shift(1) > signal_line.shift(1)) & (macd_line < signal_line)
+    rsi_oversold       = (rsi.shift(1) > 30) & (rsi < 30)
+    rsi_overbought     = (rsi.shift(1) < 70) & (rsi > 70)
 
-# chart
-st.subheader(f"{ticker} — Price Chart")
+    historical_data["Signal"] = "Hold"
+    historical_data.loc[rsi_oversold | macd_bullish_cross, "Signal"] = "Buy"
+    historical_data.loc[rsi_oversold & macd_bullish_cross, "Signal"] = "Strong Buy"
+    historical_data.loc[rsi_overbought | macd_bearish_cross, "Signal"] = "Sell"
+    historical_data.loc[rsi_overbought & macd_bearish_cross, "Signal"] = "Strong Sell"
 
-fig = make_subplots(
-    rows=4, cols=1,
-    shared_xaxes=True,
-    row_heights=[0.5, 0.17, 0.17, 0.16],
-    vertical_spacing=0.03,
-    subplot_titles=("", "Volume", "RSI (14)", "MACD")
-)
+    st.subheader(f"{ticker} — Live Metrics")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Current Price", f"R{current_price/100:.2f}")
+    col2.metric("RSI (14)", f"{current_rsi:.1f}",
+                delta="Oversold" if current_rsi < 30 else ("Overbought" if current_rsi > 70 else "Neutral"))
+    col3.metric("Trend (MA50)", trend)
+    col4.metric("MACD Bias", "Bullish" if macd_is_bullish else "Bearish")
 
-fig.add_trace(go.Candlestick(
-    x=historical_data.index,
-    open=historical_data["Open"],
-    high=historical_data["High"],
-    low=historical_data["Low"],
-    close=historical_data["Close"],
-    name="Price",
-    increasing_line_color="#3fb950",
-    decreasing_line_color="#f85149"
-), row=1, col=1)
+    st.subheader(f"{ticker} — Price Chart")
 
-fig.add_trace(go.Scatter(
-    x=historical_data.index,
-    y=ma50,
-    name="MA50",
-    line=dict(color="#58a6ff", width=1, dash="dot")
-), row=1, col=1)
+    fig = make_subplots(
+        rows=4, cols=1,
+        shared_xaxes=True,
+        row_heights=[0.5, 0.17, 0.17, 0.16],
+        vertical_spacing=0.03,
+        subplot_titles=("", "Volume", "RSI (14)", "MACD")
+    )
 
-fig.add_trace(go.Bar(
-    x=historical_data.index,
-    y=historical_data["Volume"],
-    name="Volume",
-    marker_color="rgba(88, 166, 255, 0.3)"
-), row=2, col=1)
+    fig.add_trace(go.Candlestick(
+        x=historical_data.index,
+        open=historical_data["Open"],
+        high=historical_data["High"],
+        low=historical_data["Low"],
+        close=historical_data["Close"],
+        name="Price",
+        increasing_line_color="#3fb950",
+        decreasing_line_color="#f85149"
+    ), row=1, col=1)
 
-fig.add_trace(go.Scatter(
-    x=historical_data.index,
-    y=rsi,
-    name="RSI",
-    line=dict(color="#d29922", width=1.5)
-), row=3, col=1)
+    fig.add_trace(go.Scatter(
+        x=historical_data.index, y=ma50, name="MA50",
+        line=dict(color="#58a6ff", width=1, dash="dot")
+    ), row=1, col=1)
 
-fig.add_hline(y=70, line_dash="dash", line_color="#f85149", line_width=1, row=3, col=1)
-fig.add_hline(y=30, line_dash="dash", line_color="#3fb950", line_width=1, row=3, col=1)
+    fig.add_trace(go.Bar(
+        x=historical_data.index, y=historical_data["Volume"],
+        name="Volume", marker_color="rgba(88, 166, 255, 0.3)"
+    ), row=2, col=1)
 
-fig.add_trace(go.Scatter(
-    x=historical_data.index,
-    y=macd_line,
-    name="MACD",
-    line=dict(color="#58a6ff", width=1.5)
-), row=4, col=1)
+    fig.add_trace(go.Scatter(
+        x=historical_data.index, y=rsi, name="RSI",
+        line=dict(color="#d29922", width=1.5)
+    ), row=3, col=1)
 
-fig.add_trace(go.Scatter(
-    x=historical_data.index,
-    y=signal_line,
-    name="Signal",
-    line=dict(color="#d29922", width=1.5)
-), row=4, col=1)
+    fig.add_hline(y=70, line_dash="dash", line_color="#f85149", line_width=1, row=3, col=1)
+    fig.add_hline(y=30, line_dash="dash", line_color="#3fb950", line_width=1, row=3, col=1)
 
-fig.add_trace(go.Bar(
-    x=historical_data.index,
-    y=histogram,
-    name="Histogram",
-    marker_color=["#3fb950" if v >= 0 else "#f85149" for v in histogram]
-), row=4, col=1)
+    fig.add_trace(go.Scatter(
+        x=historical_data.index, y=macd_line, name="MACD",
+        line=dict(color="#58a6ff", width=1.5)
+    ), row=4, col=1)
 
-fig.update_layout(
-    xaxis_rangeslider_visible=False,
-    height=750,
-    plot_bgcolor="#0d1117",
-    paper_bgcolor="#0d1117",
-    font=dict(color="#8b949e", family="IBM Plex Mono"),
-    showlegend=False,
-    margin=dict(l=0, r=0, t=20, b=0),
-)
+    fig.add_trace(go.Scatter(
+        x=historical_data.index, y=signal_line, name="Signal",
+        line=dict(color="#d29922", width=1.5)
+    ), row=4, col=1)
 
-for i in range(1, 5):
-    fig.update_xaxes(gridcolor="#21262d", showgrid=True, row=i, col=1)
-    fig.update_yaxes(gridcolor="#21262d", showgrid=True, row=i, col=1)
+    fig.add_trace(go.Bar(
+        x=historical_data.index, y=histogram, name="Histogram",
+        marker_color=["#3fb950" if v >= 0 else "#f85149" for v in histogram]
+    ), row=4, col=1)
 
-st.plotly_chart(fig, use_container_width=True)
+    fig.update_layout(
+        xaxis_rangeslider_visible=False,
+        height=750,
+        plot_bgcolor="#0d1117",
+        paper_bgcolor="#0d1117",
+        font=dict(color="#8b949e", family="IBM Plex Mono"),
+        showlegend=False,
+        margin=dict(l=0, r=0, t=20, b=0),
+    )
 
-# trade idea
-st.subheader("Trade Idea")
+    for i in range(1, 5):
+        fig.update_xaxes(gridcolor="#21262d", showgrid=True, row=i, col=1)
+        fig.update_yaxes(gridcolor="#21262d", showgrid=True, row=i, col=1)
 
-entry = current_price
-stop_loss = support * 0.98
-target = resistance * 0.98
-risk = entry - stop_loss
-reward = target - entry
-rr_ratio = reward / risk if risk > 0 else 0
+    st.plotly_chart(fig, use_container_width=True)
 
-if current_rsi < 30 and macd_is_bullish:
-    recommendation = "Strong Buy"
-    reasoning = f"RSI oversold at {current_rsi:.1f} AND MACD bullish. Strong confluence — high probability bounce."
-    css_class = "rec-strong-buy"
-elif current_rsi < 30:
-    recommendation = "Buy"
-    reasoning = f"RSI oversold at {current_rsi:.1f}. MACD not yet confirming — wait for crossover before entering."
-    css_class = "rec-buy"
-elif current_rsi > 70 and macd_is_bearish:
-    recommendation = "Strong Sell"
-    reasoning = f"RSI overbought at {current_rsi:.1f} AND MACD bearish. Strong confluence — high probability reversal."
-    css_class = "rec-strong-sell"
-elif current_rsi > 70:
-    recommendation = "Sell"
-    reasoning = f"RSI overbought at {current_rsi:.1f}. MACD not yet confirming — watch for bearish crossover."
-    css_class = "rec-sell"
-else:
-    recommendation = "Hold"
-    reasoning = f"RSI neutral at {current_rsi:.1f}. No clear confluence signal. Wait for a better entry point."
-    css_class = "rec-hold"
+    st.subheader("Trade Idea")
 
-st.markdown(f"""
-<div class="rec-box {css_class}">
-    <div class="rec-label">Recommendation</div>
-    <div class="rec-value">{recommendation}</div>
-    <div class="rec-reasoning">{reasoning}</div>
-</div>
-""", unsafe_allow_html=True)
+    entry     = current_price
+    stop_loss = support * 0.98
+    target    = resistance * 0.98
+    risk      = entry - stop_loss
+    reward    = target - entry
+    rr_ratio  = reward / risk if risk > 0 else 0
 
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Entry", f"R{entry / 100:.2f}")
-col2.metric("Stop Loss", f"R{stop_loss / 100:.2f}")
-col3.metric("Target", f"R{target / 100:.2f}")
-col4.metric("Risk/Reward", f"{rr_ratio:.1f}x")
+    if current_rsi < 30 and macd_is_bullish:
+        recommendation = "Strong Buy"
+        reasoning = f"RSI oversold at {current_rsi:.1f} AND MACD bullish. Strong confluence — high probability bounce."
+        css_class = "rec-strong-buy"
+    elif current_rsi < 30:
+        recommendation = "Buy"
+        reasoning = f"RSI oversold at {current_rsi:.1f}. MACD not yet confirming — wait for crossover before entering."
+        css_class = "rec-buy"
+    elif current_rsi > 70 and macd_is_bearish:
+        recommendation = "Strong Sell"
+        reasoning = f"RSI overbought at {current_rsi:.1f} AND MACD bearish. Strong confluence — high probability reversal."
+        css_class = "rec-strong-sell"
+    elif current_rsi > 70:
+        recommendation = "Sell"
+        reasoning = f"RSI overbought at {current_rsi:.1f}. MACD not yet confirming — watch for bearish crossover."
+        css_class = "rec-sell"
+    else:
+        recommendation = "Hold"
+        reasoning = f"RSI neutral at {current_rsi:.1f}. No clear confluence signal. Wait for a better entry point."
+        css_class = "rec-hold"
+
+    st.markdown(f"""
+    <div class="rec-box {css_class}">
+        <div class="rec-label">Recommendation</div>
+        <div class="rec-value">{recommendation}</div>
+        <div class="rec-reasoning">{reasoning}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Entry",        f"R{entry/100:.2f}")
+    col2.metric("Stop Loss",    f"R{stop_loss/100:.2f}")
+    col3.metric("Target",       f"R{target/100:.2f}")
+    col4.metric("Risk/Reward",  f"{rr_ratio:.1f}x")
+
+
+# ─── TAB 2: SCANNER ────────────────────────────────────────────────────────────
+with tab2:
+    st.subheader("JSE Top 40 — Signal Scanner")
+    st.caption("Scans all stocks using RSI + MACD confluence. May take 30–60 seconds.")
+
+    if st.button("Run Scanner"):
+        scanner_results = []
+        progress = st.progress(0)
+        status = st.empty()
+
+        for i, (name, tick) in enumerate(stocks.items()):
+            status.text(f"Scanning {name}...")
+            progress.progress((i + 1) / len(stocks))
+
+            try:
+                d  = yfinance.Ticker(tick)
+                df = d.history(start=start_date, end=end_date, auto_adjust=True)
+
+                if df.empty or len(df) < 30:
+                    continue
+
+                close = df["Close"].dropna()
+                r     = ta.rsi(close)
+                m     = ta.macd(close)
+                ma    = close.rolling(window=50).mean()
+
+                if r is None or m is None:
+                    continue
+
+                curr_price  = close.iloc[-1]
+                curr_rsi    = r.iloc[-1]
+                curr_macd   = m["MACD_12_26_9"].iloc[-1]
+                curr_sig    = m["MACDs_12_26_9"].iloc[-1]
+                curr_ma     = ma.iloc[-1]
+
+                if pd.isna(curr_price) or pd.isna(curr_rsi):
+                    continue
+
+                trend     = "Bullish" if curr_price > curr_ma else "Bearish"
+                macd_bias = "Bullish" if curr_macd > curr_sig else "Bearish"
+
+                if curr_rsi < 30 and curr_macd > curr_sig:
+                    signal = "Strong Buy"
+                elif curr_rsi < 30:
+                    signal = "Buy"
+                elif curr_rsi > 70 and curr_macd < curr_sig:
+                    signal = "Strong Sell"
+                elif curr_rsi > 70:
+                    signal = "Sell"
+                elif curr_macd > curr_sig and trend == "Bullish":
+                    signal = "Buy"
+                elif curr_macd < curr_sig and trend == "Bearish":
+                    signal = "Sell"
+                else:
+                    signal = "Hold"
+
+                scanner_results.append({
+                    "Stock":     name,
+                    "Price (R)": f"R{curr_price/100:.2f}",
+                    "RSI":       round(curr_rsi, 1),
+                    "MACD Bias": macd_bias,
+                    "Trend":     trend,
+                    "Signal":    signal
+                })
+
+                scanner_df["RSI"] = scanner_df["RSI"].astype(float).round(1)
+
+            except Exception:
+                continue
+
+        status.empty()
+        progress.empty()
+
+        if scanner_results:
+            scanner_df = pd.DataFrame(scanner_results)
+
+            signal_order = ["Strong Buy", "Buy", "Hold", "Sell", "Strong Sell"]
+            scanner_df["_sort"] = scanner_df["Signal"].apply(
+                lambda x: signal_order.index(x) if x in signal_order else 99
+            )
+            scanner_df = scanner_df.sort_values("_sort").drop(columns=["_sort"])
+
+            def colour_signal(val):
+                if val == "Strong Buy":
+                    return "background-color: #1a4a2e; color: #3fb950; font-weight: 600"
+                elif val == "Buy":
+                    return "background-color: #1a3a1a; color: #56d364"
+                elif val == "Strong Sell":
+                    return "background-color: #4a1a1a; color: #f85149; font-weight: 600"
+                elif val == "Sell":
+                    return "background-color: #3a1a1a; color: #ff7b72"
+                else:
+                    return "background-color: #2a2a1a; color: #d29922"
+
+            def colour_trend(val):
+                if val == "Bullish":
+                    return "color: #3fb950"
+                return "color: #f85149"
+
+            def colour_macd(val):
+                if val == "Bullish":
+                    return "color: #58a6ff"
+                return "color: #f85149"
+
+            styled_df = (
+                scanner_df.style
+                .map(colour_signal, subset=["Signal"])
+                .map(colour_trend,  subset=["Trend"])
+                .map(colour_macd,   subset=["MACD Bias"])
+            )
+
+            st.dataframe(styled_df, use_container_width=True, hide_index=True)
+
+            buy_count  = scanner_df[scanner_df["Signal"].isin(["Buy", "Strong Buy"])].shape[0]
+            sell_count = scanner_df[scanner_df["Signal"].isin(["Sell", "Strong Sell"])].shape[0]
+            hold_count = scanner_df[scanner_df["Signal"] == "Hold"].shape[0]
+
+            st.markdown("---")
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Buy Signals",  buy_count)
+            c2.metric("Hold",         hold_count)
+            c3.metric("Sell Signals", sell_count)
+        else:
+            st.warning("No data returned. Market may be closed or rate limited. Try again in a few minutes.")
